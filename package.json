@@ -6,7 +6,7 @@
   "scripts": {
     "start": "node index.js",
     "start-dev": "nodemon index.js",
-    "test": "mocha \"./{,!(node_modules)/**/}*.test.js\""
+    "test": "jest"
   },
   "author": "",
   "license": "ISC",
@@ -19,7 +19,7 @@
     "mysql2": "2.3.0"
   },
   "devDependencies": {
-    "mocha": "^9.0.3",
+    "jest": "^27.0.6",
     "nodemon": "^2.0.12",
     "supertest": "^6.1.4"
   }
