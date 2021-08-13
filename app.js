@@ -7,7 +7,7 @@ const createApp = (repo, tokenGenerator) => {
     app.get('/', (req, res) => {
         res.send('Hello World');
     });
-    app.post('/signup', (req, res) => {
+    app.post('/signup', async (req, res) => {
         // are ther login and pass in request?
         const body = req.body;
         if (body.login === undefined || body.password === undefined) {
@@ -17,7 +17,8 @@ const createApp = (repo, tokenGenerator) => {
         }
         // if no respond 400
         // else get user with this login from repo
-        const user = repo.getUserByName(body.login);
+        try {
+        const user = await repo.getUserByName(body.login);
         // if he exists respond with 200 + message: 'login taken'
         if (user !== undefined) {
             res.status(200);
@@ -27,17 +28,22 @@ const createApp = (repo, tokenGenerator) => {
         // else hash password,
         const hash = bcrypt.hashSync(body.password, 10);
         // insert user (name, hpass, role 1) into repo,
-        const newUser = repo.addUser(body.login, hash);
+        const newUser = await repo.addUser(body.login, hash);
         // generate tokens,
-        const tokens = tokenGenerator.getTokens({ user: newUser.login, role: newUser.role });
+        const tokens = await tokenGenerator.getTokens({ user: newUser.login, role: newUser.role });
         // insert new token family,
-        const newRefreshFamily = repo.addRefreshFamily(newUser.id);
+            // addRefreshFamily -return id
+        const newRefreshFamilyId = await repo.addRefreshFamily(newUser.id);
         // insert new ref. token,
-        repo.addRefreshToken(tokens.refreshToken, newRefreshFamily.id);
+        await repo.addRefreshToken(tokens.refreshToken, newRefreshFamilyId);
         // send tokens
         res.send(tokens);
+        } catch (e) {
+            res.status(500);
+            res.send({ message: e.message });
+        }
     });
-    app.post('/login', (req, res) => {
+    app.post('/login', async (req, res) => {
         // are there login/pass?
         const { body } = req;
         if (body.login === undefined || body.password === undefined) {
@@ -46,47 +52,45 @@ const createApp = (repo, tokenGenerator) => {
             return;
         }
         // if no, go 400
-        //const hashedPassword = bcrypt.hashSync(body.password, 10);
-        //const user = repo.getUserByNameAndPassword(body.login, hashedPassword);
-        const user = repo.getUserByName(body.login);
+        const user = await repo.getUserByName(body.login);
         // else get corresp user from repo (with hashed pass)
         if (user === undefined) {
             res.status(401);
             res.send();
             return;
         }
-        if (!bcrypt.compareSync(body.password, user.password)) {
+        if (!bcrypt.compareSync(body.password, user.pass)) {
             res.status(401);
             res.send();
             return;
         }
         // if no such user, go 401
         // else create ref family, tokens, return them
-        const tokens = tokenGenerator.getTokens({ user: user.login, role: user.role });
+        const tokens = await tokenGenerator.getTokens({ user: user.login, role: user.role });
         // insert new token family,
-        const newRefreshFamily = repo.addRefreshFamily(user.id);
+        const newRefreshFamilyId = await repo.addRefreshFamily(user.id);
         // insert new ref. token,
-        repo.addRefreshToken(tokens.refreshToken, newRefreshFamily.id);
+        await repo.addRefreshToken(tokens.refreshToken, newRefreshFamilyId);
         // send tokens
         res.send(tokens);
     });
-    app.post('/refresh', (req, res) => {
+    app.post('/refresh', async (req, res) => {
         // check fields
         const { body } = req;
         if (body.refreshToken === undefined) {
             res.status(400);
             res.send();
-            return;
+            return; //a
         }
         // no ? 400
-        const token = repo.getRefreshToken(body.refreshToken);
+        const token = await repo.getRefreshToken(body.refreshToken);
         if (token === undefined) {
             res.status(401);
             res.send();
             return;
         }
         // else get token and its family from repo
-        const tokenFamily = repo.getRefreshFamily(token.family);
+        const tokenFamily = await repo.getRefreshFamily(token.family);
         if (tokenFamily === undefined) {
             res.status(401);
             res.send();
@@ -102,18 +106,18 @@ const createApp = (repo, tokenGenerator) => {
         // then go 401
         // else if token been used
         if (token.has_been_used) {
-            repo.markFamilyCompromised(tokenFamily.id);
+            await repo.markFamilyCompromised(tokenFamily.id);
             res.status(401);
             res.send();
             return;
         }
         // then mark family compromised and go 401
         // else mark token used,
-        repo.markTokenUsed(token.id);
-        const user = repo.getUserById(tokenFamily.user);
-        const tokens = tokenGenerator.getTokens({ user: user.login, role: user.role });
+        await repo.markTokenUsed(token.id);
+        const user = await repo.getUserById(tokenFamily.user);
+        const tokens = await tokenGenerator.getTokens({ user: user.login, role: user.role });
         // gen new tokens
-        repo.addRefreshToken(tokens.refreshToken, tokenFamily.id);
+        await repo.addRefreshToken(tokens.refreshToken, tokenFamily.id);
         // insert refresh token with existing family
         // send tokens
         res.send(tokens);
