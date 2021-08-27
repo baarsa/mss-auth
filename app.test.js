@@ -88,4 +88,27 @@ describe('app', () => {
                 });
         });
     });
+    describe('/user', () => {
+        it('should reject with 401 if no token', () => {
+            return request(app)
+                .get('/user')
+                .expect(401);
+        });
+        it('should reject with 401 if token is invalid', () => {
+            return request(app)
+                .get('/user')
+                .set({ Authorization: 'Bearer example-token-invalid' })
+                .expect(401);
+        });
+        it('should return user name and role', () => {
+            return request(app)
+                .get('/user')
+                .set({ Authorization: 'Bearer example-token-valid' })
+                .expect(200)
+                .then((response) => {
+                    expect(response.body).toHaveProperty('name');
+                    expect(response.body).toHaveProperty('role');
+                });
+        });
+    });
 });

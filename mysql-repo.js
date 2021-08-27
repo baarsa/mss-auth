@@ -6,8 +6,8 @@ const createRepo = (conn) => {
             return results[0].length === 0 ? undefined : results[0][0];
         },
         getUserByName: async (login) => {
-            const results = await conn.execute(`SELECT * FROM user WHERE name="${login}"`);
-            return results[0].length === 0 ? undefined : results[0][0];
+            const results = await conn.execute(`SELECT u.id id, u.name name, u.pass pass, r.name role FROM user u JOIN role r ON r.id = u.role WHERE u.name="${login}"`);
+            return results[0].length === 0 ? undefined : { id: results[0][0].id, name: results[0][0].name, pass: results[0][0].pass, role: results[0][0].role };
         },
         addUser: async (login, password) => {
             const newUser = [

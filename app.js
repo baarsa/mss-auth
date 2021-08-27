@@ -1,7 +1,7 @@
 const express = require('express');
 const bcrypt = require('bcrypt');
 
-const createApp = (repo, tokenGenerator) => {
+const createApp = (repo, tokenManager) => {
     const app = express();
     app.use(express.json());
     app.get('/', (req, res) => {
@@ -30,7 +30,7 @@ const createApp = (repo, tokenGenerator) => {
         // insert user (name, hpass, role 1) into repo,
         const newUser = await repo.addUser(body.login, hash);
         // generate tokens,
-        const tokens = await tokenGenerator.getTokens({ user: newUser.login, role: newUser.role });
+        const tokens = await tokenManager.getTokens({ name: newUser.name, role: newUser.role });
         // insert new token family,
             // addRefreshFamily -return id
         const newRefreshFamilyId = await repo.addRefreshFamily(newUser.id);
@@ -66,7 +66,7 @@ const createApp = (repo, tokenGenerator) => {
         }
         // if no such user, go 401
         // else create ref family, tokens, return them
-        const tokens = await tokenGenerator.getTokens({ user: user.login, role: user.role });
+        const tokens = await tokenManager.getTokens({ name: user.name, role: user.role });
         // insert new token family,
         const newRefreshFamilyId = await repo.addRefreshFamily(user.id);
         // insert new ref. token,
@@ -115,12 +115,27 @@ const createApp = (repo, tokenGenerator) => {
         // else mark token used,
         await repo.markTokenUsed(token.id);
         const user = await repo.getUserById(tokenFamily.user);
-        const tokens = await tokenGenerator.getTokens({ user: user.login, role: user.role });
+        const tokens = await tokenManager.getTokens({ name: user.name, role: user.role });
         // gen new tokens
         await repo.addRefreshToken(tokens.refreshToken, tokenFamily.id);
         // insert refresh token with existing family
         // send tokens
         res.send(tokens);
+    });
+    app.get('/user', async (req, res) => {
+        if (!req.headers.authorization || !req.headers.authorization.startsWith('Bearer ')) {
+            res.status(401);
+            res.send();
+            return;
+        }
+        const token = req.headers.authorization.substr(7);
+        if (!tokenManager.verify(token)) {
+            res.status(401);
+            res.send();
+            return;
+        }
+        const data = tokenManager.decode(token);
+        res.send(data);
     });
     return app;
 };

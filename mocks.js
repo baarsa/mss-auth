@@ -2,8 +2,8 @@ const crs = require('crypto-random-string');
 
 const createMockRepo = () => {
     const users = [
-        { id: 1, login: 'Adrian', password: '$2b$10$Vr4NNENrBAQCkUo4uyLMtOEOYhSr.kPhV9yE2ddUk2.20wKfgYf32', role: 1 },
-        { id: 2, login: 'Benjamin', password: '$2b$10$Vr4NNENrBAQCkUo4uyLMtOEOYhSr.kPhV9yE2ddUk2.20wKfgYf32', role: 1 }
+        { id: 1, login: 'Adrian', pass: '$2b$10$Vr4NNENrBAQCkUo4uyLMtOEOYhSr.kPhV9yE2ddUk2.20wKfgYf32', role: 1 },
+        { id: 2, login: 'Benjamin', pass: '$2b$10$Vr4NNENrBAQCkUo4uyLMtOEOYhSr.kPhV9yE2ddUk2.20wKfgYf32', role: 1 }
     ];
     let currentUserId = 1;
     const refreshFamilies = [
@@ -83,7 +83,9 @@ const createMockTokenGenerator = () => {
             };
             generatedTokens.push(newTokens);
             return newTokens;
-        }
+        },
+        verify: (token) => token === 'example-token-valid',
+        decode: () => ({ name: 'Charlie', role: 'admin' })
     };
     return mockTokenGenerator;
 };
