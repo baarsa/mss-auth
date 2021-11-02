@@ -7,7 +7,7 @@ const {
 
 const mysql = require('mysql2/promise');
 const createConnection = async () => mysql.createPool({
-    host     : MYSQL_HOST,
+    host     : MYSQL_HOST || 'mysql',
     user     : MYSQL_USERNAME,
     password : MYSQL_PASSWORD,
     database : MYSQL_DB,

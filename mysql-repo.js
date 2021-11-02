@@ -2,7 +2,7 @@
 const createRepo = (conn) => {
     const repo = {
         getUserById: async (id) => {
-            const results = await conn.execute(`SELECT * FROM user WHERE id=${id}`);
+            const results = await conn.execute(`SELECT u.id id, u.name name, u.pass pass, r.name role FROM user u JOIN role r ON r.id = u.role WHERE u.id=${id}`);
             return results[0].length === 0 ? undefined : results[0][0];
         },
         getUserByName: async (login) => {
