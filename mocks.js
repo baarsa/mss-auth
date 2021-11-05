@@ -69,6 +69,7 @@ const createMockRepo = () => {
         getRefreshFamily: (familyId) => refreshFamilies.find(item => item.id === familyId),
         markFamilyCompromised: (familyId) => refreshFamilies.find(item => item.id === familyId).compromised = true,
         markTokenUsed: (tokenId) => refreshTokens.find(item => item.id === tokenId).used = true,
+        invalidateRefreshTokenFamiliesForUser: (userId) => refreshFamilies.find(item => item.user === userId).has_been_compromised = true,
     };
     return mockRepo;
 };

@@ -48,6 +48,9 @@ const createRepo = (conn) => {
         markTokenUsed: async (tokenId) => {
             return conn.execute(`UPDATE refresh_token SET has_been_used=1 WHERE id=${tokenId}`);
         },
+        invalidateRefreshTokenFamiliesForUser: async (id) => {
+            return conn.execute(`UPDATE refresh_family rf SET rf.has_been_compromised=1 WHERE rf.user=${id}`);
+        }
     };
     return repo;
 };

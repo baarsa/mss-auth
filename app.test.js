@@ -13,11 +13,15 @@ describe('app', () => {
         mockTokenGenerator = createMockTokenGenerator();
         app = createApp(mockRepo, mockTokenGenerator);
     });
-    it('should say hello', (done) => {
-        request(app)
-            .get('/')
-            .expect('Content-Type', /text\/html/)
-            .expect(200, 'Hello World', done);
+    beforeAll(() => {
+        expect.extend({
+            toHaveCookie: (headers, cookieName) => {
+                return {
+                    message: () => `Expected ${headers} to contain cookie ${cookieName}`,
+                    pass: headers['set-cookie'] !== undefined
+                    && headers['set-cookie'].some(cookie => cookie.startsWith(cookieName)) };
+            },
+        });
     });
     describe('/signup', () => {
         it('should reject with 400 if request doesnt contain login', () => {
@@ -29,14 +33,14 @@ describe('app', () => {
                 .expect(400);
         });
         // todo add more cases
-        it('should return access and refresh tokens', () => {
+        it('should return access token and set refreshToken cookie', () => {
             return request(app)
                 .post('/signup')
                 .send({login: 'bob_dylan', password: 'abcdef'})
                 .expect(200)
                 .then((response) => {
                     expect(response.body).toHaveProperty('token');
-                    expect(response.body).toHaveProperty('refreshToken');
+                    expect(response.headers).toHaveCookie('refreshToken');
                 });
         });
     });
@@ -47,15 +51,30 @@ describe('app', () => {
                 .send({ login: 'Adrian', password: 'abcdefg'})
                 .expect(401);
         });
-        it('should return access and refresh tokens', () => {
+        it('should return access token and set refreshToken cookie', () => {
             return request(app)
                 .post('/login')
                 .send({ login: 'Adrian', password: 'abcdef'})
                 .expect(200)
                 .then((response) => {
                     expect(response.body).toHaveProperty('token');
-                    expect(response.body).toHaveProperty('refreshToken');
+                    expect(response.headers).toHaveCookie('refreshToken');
                 });
+        });
+    });
+    describe('/logout', () => {
+        it('should reject with 400 if request doesnt contain token', () => {
+            return request(app)
+                .post('/logout')
+                .send({ })
+                .expect(400);
+        });
+        it('should return 200 otherwise', () => {
+            return request(app)
+                .post('/logout')
+                .set('Cookie', ['refreshToken=ok_rf'])
+                .send()
+                .expect(200);
         });
     });
     describe('/refresh', () => {
@@ -68,23 +87,26 @@ describe('app', () => {
         it('should reject with 401 if token family has been compromised', () => {
             return request(app)
                 .post('/refresh')
-                .send({ refreshToken: 'rf_of_compromised_family' })
+                .set('Cookie', ['refreshToken=rf_of_compromised_family'])
+                .send()
                 .expect(401);
         });
         it('should reject with 401 if token has been used', () => {
             return request(app)
                 .post('/refresh')
-                .send({ refreshToken: 'used_rf' })
+                .set('Cookie', ['refreshToken=used_rf'])
+                .send()
                 .expect(401);
         });
         it('should return new access and refresh tokens otherwise', () => {
             return request(app)
                 .post('/refresh')
-                .send({ refreshToken: 'ok_rf' })
+                .set('Cookie', ['refreshToken=ok_rf'])
+                .send()
                 .expect(200)
                 .then((response) => {
                     expect(response.body).toHaveProperty('token');
-                    expect(response.body).toHaveProperty('refreshToken');
+                    expect(response.headers).toHaveCookie('refreshToken');
                 });
         });
     });
