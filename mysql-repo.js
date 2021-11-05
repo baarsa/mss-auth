@@ -36,11 +36,21 @@ const createRepo = (conn) => {
         },
         getRefreshToken: async (token) => {
             const results = await conn.execute('SELECT * FROM refresh_token WHERE value=?', [token]);
-            return results[0].length === 0 ? undefined : results[0][0];
+            return results[0].length === 0
+                ? undefined
+                : {
+                    ...results[0][0],
+                    has_been_used: results[0][0].has_been_used === 1,
+                };
         },
         getRefreshFamily: async (familyId) => {
             const results = await conn.execute(`SELECT * FROM refresh_family WHERE id=${familyId}`);
-            return results[0].length === 0 ? undefined : results[0][0];
+            return results[0].length === 0
+                ? undefined
+                : {
+                    ...results[0][0],
+                    has_been_compromised: results[0][0].has_been_compromised === 1,
+                };
         },
         markFamilyCompromised: async (familyId) => {
             return conn.execute(`UPDATE refresh_family SET has_been_compromised=1 WHERE id=${familyId}`);

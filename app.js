@@ -130,7 +130,6 @@ const createApp = (repo, tokenManager) => {
         }
         // If family has been compromised respond with 401
         if (tokenFamily.has_been_compromised) {
-            // todo исправить (проверка не работает)
             res.status(401);
             res.send();
             return;
