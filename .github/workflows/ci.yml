@@ -1,13 +1,16 @@
-name: ci
+name: CI
 
 on:
   push:
-    branches: [ master ]
+    branches-ignore:
+      - master
   pull_request:
-    branches: [ master ]
-
+    branches:
+      - master
+      - develop
+  workflow_call:
 jobs:
-  test:
+  CI:
     runs-on: ubuntu-latest
     strategy:
       matrix:

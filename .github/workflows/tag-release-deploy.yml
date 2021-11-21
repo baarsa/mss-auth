@@ -1,0 +1,51 @@
+name: Tag release and deploy
+on:
+  push:
+    branches: [ master ]
+jobs:
+  call-ci:
+    uses: baarsa/mss-auth/.github/workflows/ci.yml@master
+  tag_release:
+    needs: call-ci
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v2
+      - name: Initialize mandatory git config
+        run: |
+          git config user.name "GitHub Actions"
+          git config user.email noreply@github.com
+      - name: get-npm-version
+        id: package-version
+        uses: martinbeentjes/npm-get-version-action@master
+      - name: Extract release notes
+        id: extract_release_notes
+        uses: ffurrer2/extract-release-notes@v1
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ steps.package-version.outputs.current-version}}
+          release_name: v${{ steps.package-version.outputs.current-version}}
+          body: ${{ steps.extract_release_notes.outputs.release_notes }}
+          draft: false
+          prerelease: false
+      - name: Login to YC container registry
+        uses: yc-actions/yc-cr-login@v0.1-alpha
+        with:
+          yc-sa-json-credentials: ${{ secrets.YC_SA_JSON_CREDENTIALS }}
+      - name: Build, tag, and push images to Yandex Cloud Container Registry
+        env:
+          CR_REGISTRY: crpji9bv5u2hl7eo1aae
+          CR_REPOSITORY: mss-auth
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          docker build -t cr.yandex/$CR_REGISTRY/$CR_REPOSITORY:$IMAGE_TAG .
+          docker push cr.yandex/$CR_REGISTRY/$CR_REPOSITORY:$IMAGE_TAG
+      - name: Update cluster deployment
+        uses: steebchen/kubectl@v2.0.0
+        with:
+          config: ${{ secrets.KUBE_CONFIG_DATA }}
+          command: set image deployment/mss-auth mss-auth=cr.yandex/crpji9bv5u2hl7eo1aae/mss-auth:${{ github.sha }}
