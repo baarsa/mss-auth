@@ -7,12 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Added
+## [1.0.1] - 2021-11-22
 
--   Support CORS
+### Fixed
+
+-   Security issues
 
 ## [1.0.0] - 2021-11-09
 
 ### Added
 
 -   Basic features
+
+[Unreleased]: https://github.com/baarsa/mss-auth/compare/1.0.1...HEAD
+
+[1.0.1]: https://github.com/baarsa/mss-auth/compare/1.0.0...1.0.1
