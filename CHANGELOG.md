@@ -7,9 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Added
+### Fixed
 
--   Support CORS
+-   Security issues
 
 ## [1.0.0] - 2021-11-09
 
